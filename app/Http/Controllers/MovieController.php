@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Movie;
 use App\Models\Performer;
 use App\Models\Genre;
+use App\Models\Rating;
 
 class MovieController extends Controller
 {
@@ -25,11 +26,31 @@ class MovieController extends Controller
 
     public function getNewMovies(Request $request)
     {
-        $movie = Movie::where('movies.release',"<=", $request->r_date)
+        $movies = Movie::where('movies.release',"<=", $request->r_date)
         ->select('movies.movie_id','movies.title','movies.description')
         ->get();
 
-        return response()->json($movie);
+        $data = array();
+        foreach($movies as $movie){
+            $overall_rating = "No Rating";
+            $ratings = Rating::where('movie_id', '=', $movie->movie_id)->get();
+            if(sizeof($ratings) > 0){
+                $count = 0;
+                foreach($ratings as $r){
+                    $count = $count + $r->rating;
+                }
+                $overall_rating = $count / sizeof($ratings);
+            }
+
+            array_push($data, [
+                'Movie_ID' => $movie->movie_id,
+                "Overall_rating" => $overall_rating,
+                "Title" => $movie->title,
+                "Description" => $movie->description
+            ]);
+        }
+
+        return response()->json(['data'=>$data]);
     }
 
     public function storeNewMovies(Request $request)
